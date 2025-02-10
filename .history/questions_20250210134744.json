@@ -1,0 +1,75 @@
+{
+    "quiz": [
+      {
+        "question": "What is your age range?",
+        "options": ["Under 18", "18-25", "26-35", "36-45", "46-55", "56+"],
+        "required": true,
+        "type": "single"
+      },
+      {
+        "question": "Where are you located?",
+        "options": [
+          "Northeast US",
+          "Southeast US",
+          "Midwest US",
+          "Southwest US",
+          "West Coast US",
+          "Outside US"
+        ],
+        "required": true,
+        "type": "single"
+      },
+      {
+        "question": "How did you hear about Voices Ignited?",
+        "options": [
+          "Social Media",
+          "Friend/Family",
+          "Community Organization",
+          "Protest/Rally",
+          "News/Media",
+          "Other"
+        ],
+        "required": true,
+        "type": "single"
+      },
+      {
+        "question": "Which skills can you contribute to the movement? (Select all that apply)",
+        "options": [
+          "Social Media Management",
+          "Graphic Design",
+          "Event Planning",
+          "Public Speaking",
+          "Writing/Content Creation",
+          "Legal Knowledge",
+          "Technical/IT Skills",
+          "Community Organizing",
+          "Other"
+        ],
+        "required": true,
+        "type": "multiple"
+      },
+      {
+        "question": "How much time can you commit to the movement?",
+        "options": [
+          "Several hours per week",
+          "A few hours per week",
+          "A few hours per month",
+          "Only for specific events",
+          "Not sure yet"
+        ],
+        "required": true,
+        "type": "single"
+      },
+      {
+        "question": "Would you be interested in taking on a leadership role?",
+        "options": [
+          "Yes, I have leadership experience",
+          "Yes, but I need training",
+          "Maybe in the future",
+          "No, I prefer supporting roles"
+        ],
+        "required": true,
+        "type": "single"
+      }
+    ]
+  }

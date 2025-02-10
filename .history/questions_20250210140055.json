@@ -1,0 +1,147 @@
+{
+    "quiz": [
+      {
+        "question": "What is your age?",
+        "type": "number",
+        "required": true
+      },
+      {
+        "question": "Where are you located?",
+        "type": "dropdown",
+        "options": ["US State", "Outside the US"],
+        "required": true
+      },
+      {
+        "question": "How did you hear about Voices Ignited?",
+        "type": "multiple_choice",
+        "options": ["Social Media", "Friend", "Protest", "Other"],
+        "required": true
+      },
+      {
+        "question": "Do you believe the government should prioritize the well-being of its citizens over profit?",
+        "type": "multiple_choice",
+        "options": ["Yes", "No", "Unsure"],
+        "required": true
+      },
+      {
+        "question": "Which of the following statements do you agree with?",
+        "type": "multiple_select",
+        "options": [
+          "Healthcare is a basic human right",
+          "Freedom of speech should not be weaponized for disinformation",
+          "The government should be accountable to the people, not corporations",
+          "Religious beliefs should not dictate government policy"
+        ],
+        "required": true
+      },
+      {
+        "question": "In your own words, why do you want to join Voices Ignited?",
+        "type": "text",
+        "min_length": 15,
+        "required": true
+      },
+      {
+        "question": "What do you believe is the biggest issue facing workers in the U.S. today?",
+        "type": "text",
+        "required": true
+      },
+      {
+        "question": "Would you support a general strike or economic resistance movement (such as a national sick-out)?",
+        "type": "multiple_choice",
+        "options": [
+          "Yes, and I would participate",
+          "Yes, but I can't participate personally",
+          "No, I don't think it’s effective"
+        ],
+        "required": true
+      },
+      {
+        "question": "Should religious beliefs influence laws and public policy?",
+        "type": "multiple_choice",
+        "options": [
+          "No, government should be separate from religion",
+          "Yes, but only in certain cases",
+          "Yes, religion should guide all laws"
+        ],
+        "required": true
+      },
+      {
+        "question": "How do you feel about wealth inequality in the U.S.?",
+        "type": "multiple_choice",
+        "options": [
+          "The wealth gap is too large and must be addressed",
+          "It’s a natural part of capitalism, no changes needed",
+          "The government should tax the wealthy more and redistribute wealth"
+        ],
+        "required": true
+      },
+      {
+        "question": "What skills or expertise do you bring to the movement?",
+        "type": "multiple_select",
+        "options": [
+          "Social media & content creation",
+          "Graphic design",
+          "Event planning & organizing",
+          "Fundraising & financial management",
+          "Web development & cybersecurity",
+          "Research & policy analysis",
+          "Legal expertise",
+          "Public speaking & community outreach",
+          "Other"
+        ],
+        "required": true
+      },
+      {
+        "question": "Would you be willing to take on a leadership or organizing role in your area?",
+        "type": "multiple_choice",
+        "options": ["Yes, I’m ready to lead", "Maybe, I’d like to learn first", "No, I prefer to support in other ways"],
+        "required": true
+      },
+      {
+        "question": "How much time can you commit to this movement?",
+        "type": "multiple_choice",
+        "options": ["A few hours a week", "A few hours a month", "Only when major actions/events happen", "Not sure yet"],
+        "required": true
+      },
+      {
+        "question": "Are you comfortable engaging in direct action (e.g., protests, demonstrations, labor strikes)?",
+        "type": "multiple_choice",
+        "options": ["Yes, absolutely", "Maybe, depending on circumstances", "No, I prefer to support in other ways"],
+        "required": true
+      },
+      {
+        "question": "Would you be interested in helping organize local protests or actions?",
+        "type": "multiple_choice",
+        "options": ["Yes, I can help with logistics and planning", "Yes, but I need training first", "No, I’d rather support in another way"],
+        "required": true
+      },
+      {
+        "question": "Do you have a social media account that has been active for over a year?",
+        "type": "multiple_choice",
+        "options": ["Yes, and I can provide a link for verification", "Yes, but I prefer not to share", "No, I mostly stay offline", "No, I just created a new account for this"],
+        "required": true
+      },
+      {
+        "question": "If you selected 'Yes' to the previous question, please provide a link to your social media profile (optional).",
+        "type": "text",
+        "required": false
+      },
+      {
+        "question": "Are you currently part of any activist or labor organizations?",
+        "type": "yes_no",
+        "required": true
+      },
+      {
+        "question": "Would you be comfortable using an encrypted communication platform for security purposes?",
+        "type": "yes_no",
+        "required": true
+      },
+      {
+        "question": "By submitting this form, you confirm that you align with the goals and mission of Voices Ignited. You also agree that non-violence is the best path toward meaningful change. Do you agree?",
+        "type": "multiple_choice",
+        "options": ["Yes, I fully support non-violent action and the mission of Voices Ignited.", "I support the mission but have concerns about non-violence.", "No, I do not align with this movement."],
+        "required": true
+      }
+    ]
+  }
+  
