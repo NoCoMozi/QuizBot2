@@ -32,6 +32,14 @@
         "type": "multiple_choice",
         "options": ["Social Media", "Friend", "Protest", "Other"],
         "required": true
+      },
+      {
+        "id": "gov_priority",
+        "question": "Do you believe the government should prioritize citizens over profit?",
+        "type": "multiple_choice",
+        "options": ["Yes", "No", "Unsure"],
+        "required": true,
+        "description": "Please select one option"
       }
     ]
 }
