@@ -1,13 +1,11 @@
 {
     "quiz": [
       {
-        "id": "age",
         "question": "What is your age?",
         "type": "number",
         "required": true
       },
       {
-        "id": "location_state",
         "question": "Which state are you located in?",
         "type": "multiple_choice",
         "options": [
@@ -26,21 +24,18 @@
         "required": true
       },
       {
-        "id": "source",
         "question": "How did you hear about Voices Ignited?",
         "type": "multiple_choice",
         "options": ["Social Media", "Friend", "Protest", "Other"],
         "required": true
       },
       {
-        "id": "gov_priority",
         "question": "Do you believe the government should prioritize the well-being of its citizens over profit?",
         "type": "multiple_choice",
         "options": ["Yes", "No", "Unsure"],
         "required": true
       },
       {
-        "id": "beliefs",
         "question": "Which of the following statements do you agree with?",
         "type": "multiple_choice",
         "options": [
@@ -52,21 +47,18 @@
         "required": true
       },
       {
-        "id": "join_reason",
         "question": "In your own words, why do you want to join Voices Ignited?",
         "type": "text",
         "min_length": 15,
         "required": true
       },
       {
-        "id": "worker_issues",
         "question": "What do you believe is the biggest issue facing workers in the U.S. today?",
         "type": "text",
         "required": true
       },
       {
-        "id": "strike_support",
-        "question": "Would you support a general strike or economic resistance movementsuch as a national sick-out)?",
+        "question": "Would you support a general strike or economic resistance movement (such as a national sick-out)?",
         "type": "multiple_choice",
         "options": [
           "Yes, and I would participate",
@@ -76,7 +68,6 @@
         "required": true
       },
       {
-        "id": "religion_policy",
         "question": "Should religious beliefs influence laws and public policy?",
         "type": "multiple_choice",
         "options": [
@@ -87,7 +78,6 @@
         "required": true
       },
       {
-        "id": "wealth_inequality",
         "question": "How do you feel about wealth inequality in the U.S.?",
         "type": "multiple_choice",
         "options": [
@@ -98,100 +88,71 @@
         "required": true
       },
       {
-        "id": "skills",
         "question": "What skills or expertise do you bring to the movement?",
-        "type": "multiple_select",
+        "type": "multiple_choice",
         "options": [
-          "1. Social media & content creation",
-          "2. Graphic design",
-          "3. Event planning & organizing",
-          "4. Fundraising & financial management",
-          "5. Web development & cybersecurity",
-          "6. Research & policy analysis",
-          "7. Legal expertise",
-          "8. Public speaking & community outreach",
-          "9. Other"
+          "Social media & content creation",
+          "Graphic design",
+          "Event planning & organizing",
+          "Fundraising & financial management",
+          "Web development & cybersecurity",
+          "Research & policy analysis",
+          "Legal expertise",
+          "Public speaking & community outreach",
+          "Other"
         ],
         "required": true
       },
       {
-        "id": "leadership",
         "question": "Would you be willing to take on a leadership or organizing role in your area?",
         "type": "multiple_choice",
         "options": ["Yes, I'm ready to lead", "Maybe, I'd like to learn first", "No, I prefer to support in other ways"],
         "required": true
       },
       {
-        "id": "time_commitment",
         "question": "How much time can you commit to this movement?",
         "type": "multiple_choice",
-        "options": ["Several hours/week", "Few hours/month", "Only major events", "Unsure"],
+        "options": ["A few hours a week", "A few hours a month", "Only when major actions/events happen", "Not sure yet"],
         "required": true
       },
       {
-        "id": "direct_action",
         "question": "Are you comfortable engaging in direct action (e.g., protests, demonstrations, labor strikes)?",
         "type": "multiple_choice",
         "options": ["Yes, absolutely", "Maybe, depending on circumstances", "No, I prefer to support in other ways"],
         "required": true
       },
       {
-        "id": "protest_organize",
         "question": "Would you be interested in helping organize local protests or actions?",
         "type": "multiple_choice",
         "options": ["Yes, I can help with logistics and planning", "Yes, but I need training first", "No, I'd rather support in another way"],
         "required": true
       },
       {
-        "id": "social_media",
         "question": "Do you have a social media account that has been active for over a year?",
         "type": "multiple_choice",
         "options": ["Yes, and I can provide a link for verification", "Yes, but I prefer not to share", "No, I mostly stay offline", "No, I just created a new account for this"],
         "required": true
       },
       {
-        "id": "social_media_link",
         "question": "If you selected 'Yes' to the previous question, please provide a link to your social media profile (optional).",
         "type": "text",
         "required": false
       },
       {
-        "id": "social_media_platforms",
-        "question": "Which social media platforms are you active on?",
-        "type": "multiple_select",
-        "options": [
-            "1. Twitter/X",
-            "2. Facebook",
-            "3. BlueSky",
-            "4. Instagram",
-            "5. Reddit",
-            "6. TikTok",
-            "7. LinkedIn",
-            "8. Mastodon",
-            "9. I would rather not say"
-        ],
-        "required": true
-      },
-      {
-        "id": "activist_org",
         "question": "Are you currently part of any activist or labor organizations?",
-        "type": "multiple_choice",
-        "options": ["Yes", "No"],
+        "type": "yes_no",
         "required": true
       },
       {
-        "id": "encrypted_communication",
         "question": "Would you be comfortable using an encrypted communication platform for security purposes?",
         "type": "yes_no",
         "required": true
       },
       {
-        "id": "mission_alignment",
-        "question": "Do you agree with our mission and non-violent approach?",
+        "question": "By submitting this form, you confirm that you align with the goals and mission of Voices Ignited. You also agree that non-violence is the best path toward meaningful change. Do you agree?",
         "type": "multiple_choice",
-        "options": ["Yes, fully agree", "Have concerns", "Do not agree"],
-        "required": true,
-        "description": "By selecting 'Yes', you confirm that you align with Voices Ignited's goals and believe in non-violent change."
+        "options": ["Yes, I fully support non-violent action and the mission of Voices Ignited.", "I support the mission but have concerns about non-violence.", "No, I do not align with this movement."],
+        "required": true
       }
     ]
 }

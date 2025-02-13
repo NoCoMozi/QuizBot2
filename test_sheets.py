@@ -2,37 +2,39 @@ from sheets_helper import SheetsHelper
 import logging
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO)
+# Load environment variables
+load_dotenv()
 
-def main():
-    """Test Google Sheets setup."""
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+def test_sheets_connection():
     try:
-        # Load environment variables
-        load_dotenv()
+        # Initialize sheets helper
+        logger.info("Initializing sheets helper...")
+        sheets = SheetsHelper()
         
-        # Initialize helper
-        helper = SheetsHelper()
-        
-        # Test current setup
-        print("\nTesting current setup...")
-        if helper.test_setup():
-            print("✓ Current setup looks good!")
+        # Test setup
+        logger.info("Testing sheet setup...")
+        if sheets.setup_sheet():
+            logger.info("✓ Sheet setup successful")
         else:
-            print("✗ Current setup needs fixing")
+            logger.error("✗ Sheet setup failed")
             
-            # Try to fix by recreating
-            print("\nTrying to fix by recreating sheet...")
-            helper.setup_sheet(force_recreate=True)
+        # Test row append
+        logger.info("Testing row append...")
+        test_row = ["Test Timestamp", "Test Username", "Test User ID", "Test Answer 1"]
+        if sheets.append_row(test_row):
+            logger.info("✓ Row append successful")
+        else:
+            logger.error("✗ Row append failed")
             
-            # Test again
-            print("\nTesting new setup...")
-            if helper.test_setup():
-                print("✓ Fixed! Sheet is now properly set up")
-            else:
-                print("✗ Still having issues. Please check the logs above")
-                
+        return True
+        
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Test failed with error: {str(e)}")
+        return False
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    test_sheets_connection()

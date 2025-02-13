@@ -66,7 +66,7 @@
       },
       {
         "id": "strike_support",
-        "question": "Would you support a general strike or economic resistance movementsuch as a national sick-out)?",
+        "question": "Would you support a general strike or economic resistance movement such as a national sick-out)?",
         "type": "multiple_choice",
         "options": [
           "Yes, and I would participate",
@@ -100,17 +100,17 @@
       {
         "id": "skills",
         "question": "What skills or expertise do you bring to the movement?",
-        "type": "multiple_select",
+        "type": "multiple_choice",
         "options": [
-          "1. Social media & content creation",
-          "2. Graphic design",
-          "3. Event planning & organizing",
-          "4. Fundraising & financial management",
-          "5. Web development & cybersecurity",
-          "6. Research & policy analysis",
-          "7. Legal expertise",
-          "8. Public speaking & community outreach",
-          "9. Other"
+          "Social media & content creation",
+          "Graphic design",
+          "Event planning & organizing",
+          "Fundraising & financial management",
+          "Web development & cybersecurity",
+          "Research & policy analysis",
+          "Legal expertise",
+          "Public speaking & community outreach",
+          "Other"
         ],
         "required": true
       },
@@ -154,23 +154,6 @@
         "question": "If you selected 'Yes' to the previous question, please provide a link to your social media profile (optional).",
         "type": "text",
         "required": false
-      },
-      {
-        "id": "social_media_platforms",
-        "question": "Which social media platforms are you active on?",
-        "type": "multiple_select",
-        "options": [
-            "1. Twitter/X",
-            "2. Facebook",
-            "3. BlueSky",
-            "4. Instagram",
-            "5. Reddit",
-            "6. TikTok",
-            "7. LinkedIn",
-            "8. Mastodon",
-            "9. I would rather not say"
-        ],
-        "required": true
       },
       {
         "id": "activist_org",
