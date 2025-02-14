@@ -154,10 +154,22 @@ class FormBot:
                 update.message.reply_text("Sorry, there was an error loading the questions. Please try again later.")
                 return
 
+            # Get user info
+            user = update.effective_user
+            username = user.username or "Unknown"
+            first_name = user.first_name or "Unknown"
+            last_name = user.last_name or "Unknown"
+            user_id = str(user.id)
+
             # Reset user data
             context.user_data['form_data'] = {
                 'current_question': 0,
-                'answers': {},
+                'answers': {
+                    'username': username,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'user_id': user_id
+                },
                 'start_time': datetime.now().isoformat()
             }
 
@@ -183,8 +195,6 @@ class FormBot:
             
             # Check if we've reached the end of questions
             if current_idx >= len(self.questions):
-                # Send the data to Google Sheets
-                self.send_to_google_form(user_data)
                 # Finish the form
                 self.finish_form(update, context)
                 return
@@ -355,8 +365,8 @@ class FormBot:
             
             # Check for disqualifying answers
             if current_question['id'] in ['enforcement_affiliation', 'reporting_role'] and answer == "Yes":
-                # Send to Google Form and end conversation
-                self.send_to_google_form(user_data)
+                # Finish the form
+                self.finish_form(update, context)
                 update.effective_message.reply_text(
                     "We apologize, but based on your responses, we cannot proceed with your application. "
                     "Thank you for your interest in Voices Ignited."
@@ -365,8 +375,8 @@ class FormBot:
                 return
                 
             if current_question['id'] == 'confidentiality' and answer == "No":
-                # Send to Google Form and end conversation
-                self.send_to_google_form(user_data)
+                # Finish the form
+                self.finish_form(update, context)
                 update.effective_message.reply_text(
                     "We apologize, but based on your responses, we cannot proceed with your application. "
                     "Thank you for your interest in Voices Ignited."
@@ -375,8 +385,8 @@ class FormBot:
                 return
 
             if current_question['id'] == 'mission_alignment' and answer == "Do not agree":
-                # Send to Google Form and end conversation
-                self.send_to_google_form(user_data)
+                # Finish the form
+                self.finish_form(update, context)
                 update.effective_message.reply_text(
                     "We apologize, but based on your responses, we cannot proceed with your application. "
                     "Thank you for your interest in Voices Ignited."
@@ -415,100 +425,62 @@ class FormBot:
             elif update.message:
                 update.message.reply_text("Sorry, something went wrong. Please try /start again.")
 
-    def send_to_google_form(self, user_data):
-        """Send user data to Google Sheets."""
+    def finish_form(self, update: Update, context: CallbackContext) -> None:
+        """Save form data and finish."""
         try:
-            # Add timestamp
-            timestamp = datetime.now().isoformat()
+            # Get user data from form_data
+            form_data = context.user_data.get('form_data', {})
+            user_data = form_data.get('answers', {})
+            chat_id = update.effective_chat.id
             
-            # Get answers in the correct order based on questions.json
-            answers = []
-            for question in self.questions:
-                answer = user_data['answers'].get(question['id'], '')
-                if isinstance(answer, (list, tuple)):
-                    answer = ', '.join(answer)
-                answers.append(str(answer))
+            # Get current time
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            # Add timestamp as the last column
-            answers.append(timestamp)
-            
-            # Send to sheet
-            self.sheets_helper.append_row(answers)
-            logger.info(f"Successfully sent data to Google Sheet: {answers}")
-        except Exception as e:
-            logger.error(f"Error sending to Google Sheet: {str(e)}", exc_info=True)
-
-    def finish_form(self, update: Update, context: CallbackContext):
-        """Handle form completion."""
-        user_data = self.get_user_data(context)
-        
-        # Get the user's state and leadership preference from their answers
-        user_state = user_data['answers'].get('state')
-        leadership_interest = user_data['answers'].get('leadership')
-        selected_platforms = user_data['answers'].get('social_media_platforms', '').split(', ')
-        
-        # Prepare completion message
-        completion_text = (
-            "Thank you for completing the Voices Ignited questionnaire! "
-            "Your responses will help us better understand how to work together for change."
-        )
-        
-        # Add state-specific link if available
-        if user_state and user_state in self.state_links:
-            completion_text += f"\n\nJoin your local state group here: {self.state_links[user_state]}"
-            
-            # Add general channels that everyone should join
-            general_channels = [
-                ("Mental Health Check In", "https://t.me/c/2399831251/227321"),
-                ("Public Announcements", "https://t.me/c/2399831251/465"),
-                ("Official Media & Information", "https://t.me/c/2399831251/202409"),
-                ("Open Discussion", "https://t.me/c/2399831251/8684")
+            # Start row data with user info and timestamp
+            row_data = [
+                user_data.get('username', 'Unknown'),
+                user_data.get('first_name', 'Unknown'),
+                user_data.get('last_name', 'Unknown'),
+                user_data.get('user_id', 'Unknown'),
+                timestamp
             ]
             
-            completion_text += "\n\nHere are some important general channels you should join:"
-            for channel_name, channel_link in general_channels:
-                completion_text += f"\n• {channel_name}: {channel_link}"
-
-        # Add leadership application links if user expressed interest
-        if leadership_interest in ["Yes, I'm ready to lead", "Maybe, I'd like to learn first"]:
-            completion_text += "\n\nSince you expressed interest in leadership, here are our leadership application channels:"
-            completion_text += f"\n• General Leadership Applications: {self.leadership_links['general']}"
-            completion_text += f"\n• Veterans, Educators & Nurses Leadership: {self.leadership_links['veterans_educators_nurses']}"
-            completion_text += f"\n• Marginalized/Underrepresented Community Leadership: {self.leadership_links['marginalized_underrepresented']}"
-            completion_text += "\n\nPlease apply through the channel that best fits your background and experience."
-
-        # Add social media follow links
-        completion_text += "\n\nPlease follow us on our social media channels:"
-        
-        # Map selected platforms to our actual social media links
-        platform_mapping = {
-            "1. Twitter/X": None,  # No Twitter link provided
-            "2. Facebook": None,  # No Facebook link provided
-            "3. BlueSky": self.social_media_links["BlueSky"],
-            "4. Instagram": self.social_media_links["Instagram"],
-            "5. Reddit": None,  # No Reddit link provided
-            "6. TikTok": self.social_media_links["TikTok"],
-            "7. LinkedIn": None,  # No LinkedIn link provided
-            "8. Mastodon": None  # No Mastodon link provided
-        }
-        
-        # Add all available social media links
-        completion_text += f"\n• BlueSky: {self.social_media_links['BlueSky']}"
-        completion_text += f"\n• TikTok: {self.social_media_links['TikTok']}"
-        completion_text += f"\n• Instagram: {self.social_media_links['Instagram']}"
-        completion_text += f"\n• YouTube: {self.social_media_links['YouTube']}"
-        completion_text += f"\n• Substack: {self.social_media_links['Substack']}"
-        completion_text += f"\n• Keybase Team: {self.social_media_links['Keybase']}"
-        completion_text += f"\n\nAll our social links: {self.social_media_links['Linktree']}"
-        
-        # Send the completion message
-        if update.callback_query:
-            update.callback_query.message.reply_text(completion_text, parse_mode=ParseMode.HTML)
-        elif update.message:
-            update.message.reply_text(completion_text, parse_mode=ParseMode.HTML)
+            # Load questions to ensure correct order
+            with open('questions.json', 'r', encoding='utf-8') as f:
+                questions = json.load(f)['quiz']
             
-        # Clear user data
-        context.user_data.clear()
+            # Add responses in the same order as questions
+            for q in questions:
+                response = user_data.get(q['id'], '')
+                if isinstance(response, list):
+                    response = ', '.join(response)
+                row_data.append(response)
+            
+            # Save to Google Sheet using the class instance
+            self.sheets_helper.append_row(row_data)
+            
+            # Clear user data
+            context.user_data.clear()
+            
+            # Send completion message
+            if update.callback_query:
+                update.callback_query.message.reply_text(
+                    "Thank you for completing the form! Your responses have been recorded.\n\n"
+                    "To start over, use /start"
+                )
+            else:
+                context.bot.send_message(
+                    chat_id=chat_id,
+                    text="Thank you for completing the form! Your responses have been recorded.\n\n"
+                    "To start over, use /start"
+                )
+            
+        except Exception as e:
+            logger.error(f"Error in finish_form: {str(e)}")
+            context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, there was an error saving your responses. Please try again later or contact support."
+            )
 
 def main():
     """Run the bot."""

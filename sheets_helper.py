@@ -13,7 +13,7 @@ class SheetsHelper:
         self.creds = None
         self.service = None
         self.spreadsheet_id = os.getenv('SPREADSHEET_ID')
-        self.sheet_name = 'Form Responses'
+        self.sheet_name = 'Intake'
         self.initialize_service()
 
     def initialize_service(self):
@@ -32,80 +32,43 @@ class SheetsHelper:
             raise
 
     def setup_sheet(self, force_recreate=False):
-        """Create Form Responses sheet if it doesn't exist and set up headers."""
+        """Set up the sheet with headers."""
         try:
-            # Get spreadsheet info
-            spreadsheet = self.service.spreadsheets().get(
+            # Get current sheets to check if our sheet exists
+            sheets = self.service.spreadsheets().get(
                 spreadsheetId=self.spreadsheet_id
             ).execute()
             
-            sheets = spreadsheet.get('sheets', [])
-            sheet_names = [s['properties']['title'] for s in sheets]
+            sheet_exists = any(sheet['properties']['title'] == self.sheet_name 
+                             for sheet in sheets['sheets'])
             
-            # Delete sheet if force recreate
-            if force_recreate and self.sheet_name in sheet_names:
-                logger.info(f"Force recreating sheet: {self.sheet_name}")
-                sheet_id = None
-                for sheet in sheets:
-                    if sheet['properties']['title'] == self.sheet_name:
-                        sheet_id = sheet['properties']['sheetId']
-                        break
-                        
-                if sheet_id:
-                    requests = [{
-                        'deleteSheet': {
-                            'sheetId': sheet_id
-                        }
-                    }]
-                    self.service.spreadsheets().batchUpdate(
+            if not sheet_exists or force_recreate:
+                if force_recreate and sheet_exists:
+                    # Clear existing content
+                    self.service.spreadsheets().values().clear(
                         spreadsheetId=self.spreadsheet_id,
-                        body={'requests': requests}
+                        range=f"{self.sheet_name}!A:Z"
                     ).execute()
-                    sheet_names.remove(self.sheet_name)
-            
-            # Create sheet if it doesn't exist
-            if self.sheet_name not in sheet_names:
-                logger.info(f"Creating sheet: {self.sheet_name}")
-                requests = [{
-                    'addSheet': {
-                        'properties': {
-                            'title': self.sheet_name,
-                            'gridProperties': {
-                                'frozenRowCount': 1  # Freeze header row
-                            }
-                        }
-                    }
-                }]
-                self.service.spreadsheets().batchUpdate(
-                    spreadsheetId=self.spreadsheet_id,
-                    body={'requests': requests}
-                ).execute()
                 
-                # Add headers
-                with open('questions.json', 'r') as f:
+                # Start with user info and timestamp
+                headers = ['Username', 'First Name', 'Last Name', 'User ID', 'Timestamp']
+                
+                # Load questions to get all field names
+                with open('questions.json', 'r', encoding='utf-8') as f:
                     questions = json.load(f)['quiz']
-                    
-                headers = []
-                for q in questions:
-                    headers.append(q['question'])
-                headers.append("Timestamp")
+                    for q in questions:
+                        headers.append(q['text'])
                 
                 # Update headers
-                range_name = f'{self.sheet_name}!A1'
-                body = {
-                    'values': [headers]
-                }
                 self.service.spreadsheets().values().update(
                     spreadsheetId=self.spreadsheet_id,
-                    range=range_name,
+                    range=f"{self.sheet_name}!A1",
                     valueInputOption='RAW',
-                    body=body
+                    body={'values': [headers]}
                 ).execute()
                 
-                logger.info("Headers added successfully")
-                
-            return True
-                
+                logger.info("Sheet headers set up successfully")
+            
         except Exception as e:
             logger.error(f"Error setting up sheet: {str(e)}")
             raise
@@ -145,8 +108,8 @@ class SheetsHelper:
             with open('questions.json', 'r') as f:
                 questions = json.load(f)['quiz']
                 
-            if len(headers) != len(questions) + 1:  # +1 for timestamp
-                logger.error(f"✗ Header count mismatch. Expected {len(questions) + 1}, got {len(headers)}")
+            if len(headers) != len(questions) + 5:  # +5 for timestamp, username, first name, last name, user ID
+                logger.error(f"✗ Header count mismatch. Expected {len(questions) + 5}, got {len(headers)}")
                 return False
                 
             logger.info("✓ Header count matches questions")
@@ -156,21 +119,70 @@ class SheetsHelper:
             logger.error(f"Error testing setup: {str(e)}")
             return False
 
-    def append_row(self, values):
-        """Append a row to the Google Sheet."""
+    def validate_headers(self):
+        """Validate that headers match questions."""
         try:
-            body = {
-                'values': [values]
-            }
-            result = self.service.spreadsheets().values().append(
+            # Get current headers
+            result = self.service.spreadsheets().values().get(
                 spreadsheetId=self.spreadsheet_id,
-                range=f'{self.sheet_name}!A1',  # This will append to the first empty row
+                range=f"{self.sheet_name}!1:1"
+            ).execute()
+            
+            if 'values' not in result:
+                logger.error("✗ No headers found")
+                return False
+                
+            headers = result['values'][0]
+            
+            # Load questions
+            with open('questions.json', 'r') as f:
+                questions = json.load(f)['quiz']
+                
+            if len(headers) != len(questions) + 5:  # +5 for timestamp, username, first name, last name, user ID
+                logger.error(f"✗ Header count mismatch. Expected {len(questions) + 5}, got {len(headers)}")
+                return False
+                
+            logger.info("✓ Header count matches questions")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error validating headers: {str(e)}")
+            return False
+
+    def append_row(self, row_data):
+        """Append a row of data to the sheet."""
+        try:
+            # Get the range
+            range_name = f"{self.sheet_name}!A:Z"
+            
+            # Get current values to check if headers exist and find last row
+            result = self.service.spreadsheets().values().get(
+                spreadsheetId=self.spreadsheet_id,
+                range=range_name
+            ).execute()
+            
+            # If sheet is empty, add headers
+            if 'values' not in result:
+                self.setup_sheet(force_recreate=True)
+                next_row = 2
+            else:
+                next_row = len(result.get('values', [])) + 1
+            
+            # Prepare request to write to specific row
+            body = {
+                'values': [row_data]
+            }
+            
+            # Make request using update to specific row
+            result = self.service.spreadsheets().values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!A{next_row}",
                 valueInputOption='RAW',
-                insertDataOption='INSERT_ROWS',
                 body=body
             ).execute()
-            logger.info(f"Appended row to Google Sheet: {result}")
-            return result
+            
+            logger.info(f"Row appended successfully at row {next_row}")
+            
         except Exception as e:
-            logger.error(f"Error appending to Google Sheet: {str(e)}")
+            logger.error(f"Error appending row: {str(e)}")
             raise
