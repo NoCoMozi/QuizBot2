@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "freshshare",
+  "private_key_id": "b561dbef2eddf8d68fc031624cd827c784f9a8a6",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDgf3t1ssaCDYXS\nOzDIHLqdfUv5zsdn9YpYkuFsLLBq39MwpYp7NtoLUkpzYhQGvrS5ytPHjCR0JTuS\nOl9sgmZ+6nn9SrgaT/uFIw15WULRbo4l/oalscJs/6qyHz3mYKaXHREDqm7Hbqu1\nycntRpMf+EATmKY7RXxNx5btV2EI8Ztx461Bdf1LlX5BybHKQokdjnIM44Z/hvuL\n0d4PGcln8BMQ/1P2nnR7wkWxPZ2g3U+5xcvrVkt3eWLOIDNsVJHt42nZuapQogvP\nP7Q93WEUZgG/IU3ENQqtxw77ImT3VXQGUGxArthJwXtA0zWML/uPsi7FzGipCu2l\nsZIg56lHAgMBAAECggEAUwJAO7phVQg8AYqaVHvu8rm4JIO1TrbHM04IJQ/3IWVm\nePfU1w9mm0YPuk87GW1ddM9O9FtYxUtZFg4YZ45l6Kq5dZMxtKT7WvSlkEeVgcvv\nqpPM5KpwOg5k5tzPbgYxwvFf76uOr5Y3zo1w6Ret4eXQh45rdMISHs5ce6DSA9Rk\n/MwOQH3fnNkMAj2H3NaRrDtESmOQ0YQKTcTDGT9H7gc7xTz+uW6hHLaUckeaYamK\nlTP9JzzGdENBAJh1S2myBWx+axb1jQR+OeNBGFHj+r0Bg0MMG6ZGvoM3eDG+Qw2M\nrh4M7Ot+lsCERqx0g86XzImocfpyxZNUvPKPmE1dqQKBgQDwey439Po9sDg479sD\n8mpeBjXfnwBzC15xnZ9HG+OOpGufisU+u4MgiBbUSD1GNX2E+HMjPoBrGkRMCa5X\njdj64u6PvgVXcfHb+Y/ue+eZmdtaIPAbviYkm4hXqk2Swuo6YuYG0pQV7TdTImAB\nazYwz/VBLrNECCuVzdTqv4VyWQKBgQDu/EEvzQSpN//5NNJpw0Ky6IPVKZW7fTE9\njBCdvii4n7Pdt5tlh/VernteTQAEf0tGBGJsIOwbZarN7Y0MHMfcHyUMUHVpY1Kn\nLQWnxSEokD8FqKJmF9gukji8osVx+KBzdzeiWX6PcFdlFBAWTuiGAsTjc8saDaLo\nF0FaPxZEnwKBgCsY2Eqc86/Uge7qRWTqr9dT45nE5A66Dd3sspvKyrhIjSUVeI3q\nivBskzLOE3UepvUKlY/OZrNLDMxXu8/jEuy7eKd4FXr7Z63Vhs7lk7b6VM5NMtq1\n9B4BZajYU3imx9VY3gKBAJsBXTXf5ja64QZUbo6U8PmTQURik/LSCfdZAoGBAM9j\nSI5as7jFR/TSyeXN9IudCwpoU++n7JskeSbqZhwROt0lAE1TdrL7Z0OmPmWosYHJ\nPD/pMft0dozNoKDqOOXkgRn2mG0kLA23HDlC8EtrIcWfWY6PEqMXcPUBq6YDw/lv\nc3AHibSgILcueediApaIwKNBUPcC7mPKCoRuSryxAoGBAK7k9RFr0S3JDp0eEx7i\nLka8lfurhZoAKGO9FjKV5Mpzk5T8I7ChWQbdoFaPoLPkk0Un+/c9y9tWjO61N71w\nc4WcX4uc4X3SXWsIHxuOHCvMlE7CHYVMDZl7VzRYU9V6BnR4MmWC4naezNAv1STY\nChqCvqZ7FlekXavphcWvenFT\n-----END PRIVATE KEY-----\n",
+  "client_email": "kaybasebot@freshshare.iam.gserviceaccount.com",
+  "client_id": "111611632607913446971",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/kaybasebot%40freshshare.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

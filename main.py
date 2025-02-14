@@ -14,19 +14,30 @@ from telegram.ext import (
 )
 from dotenv import load_dotenv
 from sheets_helper import SheetsHelper
+from utils.backup_manager import BackupManager
+from logging.handlers import RotatingFileHandler
+import sys
 
 # Load environment variables
 load_dotenv()
 
-# Enable logging with more detailed format
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        logging.FileHandler('bot.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configure logging with rotation and enhanced formatting
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s')
+
+# File handler with rotation (10MB per file, keep 5 backup files)
+file_handler = RotatingFileHandler('logs/bot.log', maxBytes=10*1024*1024, backupCount=5)
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+# Configure root logger
+logging.root.setLevel(logging.INFO)
+logging.root.addHandler(file_handler)
+logging.root.addHandler(console_handler)
 
 # Set Telegram API logger to WARNING to avoid exposing token
 logging.getLogger('telegram').setLevel(logging.WARNING)
@@ -34,6 +45,9 @@ logging.getLogger('telegram.bot').setLevel(logging.WARNING)
 logging.getLogger('telegram.ext.updater').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
+# Initialize backup manager
+backup_manager = BackupManager()
 
 class FormBot:
     def __init__(self):
@@ -53,11 +67,16 @@ class FormBot:
             "Linktree": "https://linktr.ee/voices_ignited",
             "Keybase": "keybase://team-page/quiz_team"
         }
+        self.sheets_helper = SheetsHelper()
         
     def load_questions(self):
         """Load and validate questions from JSON file."""
         try:
             questions_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'questions.json')
+            
+            # Create backup before loading
+            backup_manager.backup_file(questions_path)
+            
             with open(questions_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 # Validate question format
@@ -162,7 +181,11 @@ class FormBot:
             user_data = self.get_user_data(context)
             current_idx = user_data['current_question']
             
+            # Check if we've reached the end of questions
             if current_idx >= len(self.questions):
+                # Send the data to Google Sheets
+                self.send_to_google_form(user_data)
+                # Finish the form
                 self.finish_form(update, context)
                 return
 
@@ -173,10 +196,20 @@ class FormBot:
             if 'description' in question:
                 question_text += f"\n\n{question['description']}"
 
-            if question.get('type') in ['multiple_choice', 'multiple_select'] and 'options' in question:
-                # For multiple choice questions, create inline keyboard
+            if question.get('type') in ['multiple_choice', 'multiple_select']:
+                # Get the current options
+                options = question.get('options', [])
+                
+                # For state question, check if we need to use region-specific options
+                if question['id'] == 'state' and question.get('dynamic'):
+                    selected_region = user_data['answers'].get('region')
+                    if selected_region and 'region_states' in question:
+                        options = question['region_states'].get(selected_region, ["Other State"])
+                        logger.info(f"Using region-specific states for {selected_region}: {options}")
+                
+                # Create keyboard with available options
                 keyboard = []
-                for option in question['options']:
+                for option in options:
                     keyboard.append([InlineKeyboardButton(option, callback_data=option)])
                     
                 # For multiple select, add a "Done" button
@@ -264,37 +297,146 @@ class FormBot:
             current_idx = user_data['current_question']
             current_question = self.questions[current_idx]
             
-            # For multiple choice questions, process immediately
-            if query.data != "DONE_SELECTING":
+            # Always acknowledge the callback query first
+            query.answer()
+            
+            # Handle multiple select questions
+            if current_question.get('type') == 'multiple_select':
+                if 'selected_options' not in user_data:
+                    user_data['selected_options'] = []
+                    
+                if query.data == "DONE_SELECTING":
+                    if user_data['selected_options']:  # Only proceed if they selected at least one option
+                        # Join the selected options with commas and save
+                        user_data['answers'][current_question['id']] = ", ".join(user_data['selected_options'])
+                        # Clear the selected options
+                        user_data['selected_options'] = []
+                        # Move to next question
+                        user_data['current_question'] += 1
+                        self.send_question(update, context)
+                    else:
+                        # If no options selected, inform the user
+                        query.message.reply_text("Please select at least one option before clicking Done.")
+                else:
+                    # Toggle the selected option
+                    if query.data in user_data['selected_options']:
+                        user_data['selected_options'].remove(query.data)
+                    else:
+                        user_data['selected_options'].append(query.data)
+                    # Update the message to show what's selected
+                    current_selections = "\n\nSelected: " + ", ".join(user_data['selected_options']) if user_data['selected_options'] else ""
+                    query.message.edit_text(
+                        text=f"{current_idx + 1}. {current_question['question']}\n\n(You can select multiple options. Click '✅ Done' when finished.){current_selections}",
+                        reply_markup=query.message.reply_markup
+                    )
+            else:
+                # For multiple choice questions, process immediately
                 user_data['answers'][current_question['id']] = query.data
                 user_data['current_question'] += 1
-                query.answer()  # Acknowledge the button press
                 self.send_question(update, context)
                 
         except Exception as e:
             logger.error(f"Error in handle_callback: {str(e)}", exc_info=True)
-            if update.callback_query:
+            try:
+                query.answer()  # Make sure to acknowledge the query even on error
                 update.callback_query.message.reply_text("Sorry, something went wrong. Please try /start again.")
+            except Exception as inner_e:
+                logger.error(f"Error sending error message: {str(inner_e)}", exc_info=True)
 
     def process_answer(self, update: Update, context: CallbackContext, answer: str):
         """Process the user's answer and move to next question."""
-        user_data = self.get_user_data(context)
-        current_idx = user_data['current_question']
-        current_question = self.questions[current_idx]
-        
-        # Save the answer
-        user_data['answers'][current_question['id']] = answer
-        
-        # Move to next question
-        user_data['current_question'] += 1
-        
-        # Check if we're done with all questions
-        if user_data['current_question'] >= len(self.questions):
-            self.finish_form(update, context)
-            return
+        try:
+            user_data = self.get_user_data(context)
+            current_idx = user_data['current_question']
+            current_question = self.questions[current_idx]
             
-        # Send next question
-        self.send_question(update, context)
+            # Save the answer
+            user_data['answers'][current_question['id']] = answer
+            
+            # Check for disqualifying answers
+            if current_question['id'] in ['enforcement_affiliation', 'reporting_role'] and answer == "Yes":
+                # Send to Google Form and end conversation
+                self.send_to_google_form(user_data)
+                update.effective_message.reply_text(
+                    "We apologize, but based on your responses, we cannot proceed with your application. "
+                    "Thank you for your interest in Voices Ignited."
+                )
+                context.user_data.clear()
+                return
+                
+            if current_question['id'] == 'confidentiality' and answer == "No":
+                # Send to Google Form and end conversation
+                self.send_to_google_form(user_data)
+                update.effective_message.reply_text(
+                    "We apologize, but based on your responses, we cannot proceed with your application. "
+                    "Thank you for your interest in Voices Ignited."
+                )
+                context.user_data.clear()
+                return
+
+            if current_question['id'] == 'mission_alignment' and answer == "Do not agree":
+                # Send to Google Form and end conversation
+                self.send_to_google_form(user_data)
+                update.effective_message.reply_text(
+                    "We apologize, but based on your responses, we cannot proceed with your application. "
+                    "Thank you for your interest in Voices Ignited."
+                )
+                context.user_data.clear()
+                return
+            
+            # If this was the region question, update the next question's state options
+            if current_question['id'] == 'region':
+                next_idx = current_idx + 1
+                if next_idx < len(self.questions):
+                    next_question = self.questions[next_idx]
+                    if next_question['id'] == 'state' and next_question.get('dynamic'):
+                        logger.info(f"Updating state options for region: {answer}")
+                        if 'region_states' in next_question:
+                            next_question['options'] = next_question['region_states'].get(answer, ["Other State"])
+                            logger.info(f"New state options: {next_question['options']}")
+                        else:
+                            logger.error("region_states not found in state question")
+            
+            # Move to next question
+            user_data['current_question'] += 1
+            
+            # Check if we're done with all questions
+            if user_data['current_question'] >= len(self.questions):
+                self.finish_form(update, context)
+                return
+                
+            # Send next question
+            self.send_question(update, context)
+            
+        except Exception as e:
+            logger.error(f"Error in process_answer: {str(e)}", exc_info=True)
+            if update.callback_query:
+                update.callback_query.message.reply_text("Sorry, something went wrong. Please try /start again.")
+            elif update.message:
+                update.message.reply_text("Sorry, something went wrong. Please try /start again.")
+
+    def send_to_google_form(self, user_data):
+        """Send user data to Google Sheets."""
+        try:
+            # Add timestamp
+            timestamp = datetime.now().isoformat()
+            
+            # Get answers in the correct order based on questions.json
+            answers = []
+            for question in self.questions:
+                answer = user_data['answers'].get(question['id'], '')
+                if isinstance(answer, (list, tuple)):
+                    answer = ', '.join(answer)
+                answers.append(str(answer))
+            
+            # Add timestamp as the last column
+            answers.append(timestamp)
+            
+            # Send to sheet
+            self.sheets_helper.append_row(answers)
+            logger.info(f"Successfully sent data to Google Sheet: {answers}")
+        except Exception as e:
+            logger.error(f"Error sending to Google Sheet: {str(e)}", exc_info=True)
 
     def finish_form(self, update: Update, context: CallbackContext):
         """Handle form completion."""
@@ -371,15 +513,19 @@ class FormBot:
 def main():
     """Run the bot."""
     try:
+        # Load environment variables
+        load_dotenv()
+        
+        # Get bot token from environment
+        token = os.getenv('BOT_TOKEN')
+        if not token:
+            raise ValueError("No bot token found in environment variables")
+            
         # Enable more verbose logging
         logging.getLogger('telegram').setLevel(logging.DEBUG)
         logging.getLogger('telegram.ext').setLevel(logging.DEBUG)
         
         bot = FormBot()
-        token = os.getenv('BOT_TOKEN')
-        if not token:
-            raise ValueError("No bot token found in environment")
-            
         updater = Updater(token, use_context=True)
         bot.updater = updater
         

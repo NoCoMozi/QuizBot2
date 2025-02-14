@@ -1,58 +1,53 @@
-from google.oauth2.credentials import Credentials
+import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-import os
-import json
-from datetime import datetime
 import logging
+import json
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class SheetsHelper:
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    
     def __init__(self):
-        """Initialize the Google Sheets helper."""
-        self.SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
-        if not self.SPREADSHEET_ID:
-            raise ValueError("SPREADSHEET_ID not found in environment variables")
-            
-        self.SHEET_NAME = 'Sheet1'  # Changed to Sheet1 since it's the default sheet
-        
+        self.creds = None
+        self.service = None
+        self.spreadsheet_id = os.getenv('SPREADSHEET_ID')
+        self.sheet_name = 'Form Responses'
+        self.initialize_service()
+
+    def initialize_service(self):
+        """Initialize the Google Sheets service."""
         try:
-            # Load credentials
-            logger.debug("Loading service account credentials...")
-            creds = service_account.Credentials.from_service_account_file(
-                'service_account.json',
-                scopes=['https://www.googleapis.com/auth/spreadsheets']
+            # Load service account credentials
+            self.creds = service_account.Credentials.from_service_account_file(
+                'freshshare-b561dbef2edd.json',
+                scopes=self.SCOPES
             )
-            logger.info("Successfully loaded credentials")
             
-            # Create service
-            logger.debug("Initializing Google Sheets service...")
-            self.service = build('sheets', 'v4', credentials=creds)
-            self.sheet = self.service.spreadsheets()
-            logger.info("Successfully initialized Google Sheets service")
-            
+            self.service = build('sheets', 'v4', credentials=self.creds)
+            logger.info("Google Sheets service initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize sheets helper: {str(e)}")
+            logger.error(f"Error initializing Google Sheets service: {str(e)}")
             raise
-            
+
     def setup_sheet(self, force_recreate=False):
-        """Create Responses sheet if it doesn't exist and set up headers."""
+        """Create Form Responses sheet if it doesn't exist and set up headers."""
         try:
             # Get spreadsheet info
-            spreadsheet = self.sheet.get(spreadsheetId=self.SPREADSHEET_ID).execute()
+            spreadsheet = self.service.spreadsheets().get(
+                spreadsheetId=self.spreadsheet_id
+            ).execute()
+            
             sheets = spreadsheet.get('sheets', [])
             sheet_names = [s['properties']['title'] for s in sheets]
             
             # Delete sheet if force recreate
-            if force_recreate and self.SHEET_NAME in sheet_names:
-                logger.info(f"Force recreating sheet: {self.SHEET_NAME}")
+            if force_recreate and self.sheet_name in sheet_names:
+                logger.info(f"Force recreating sheet: {self.sheet_name}")
                 sheet_id = None
                 for sheet in sheets:
-                    if sheet['properties']['title'] == self.SHEET_NAME:
+                    if sheet['properties']['title'] == self.sheet_name:
                         sheet_id = sheet['properties']['sheetId']
                         break
                         
@@ -62,27 +57,27 @@ class SheetsHelper:
                             'sheetId': sheet_id
                         }
                     }]
-                    self.sheet.batchUpdate(
-                        spreadsheetId=self.SPREADSHEET_ID,
+                    self.service.spreadsheets().batchUpdate(
+                        spreadsheetId=self.spreadsheet_id,
                         body={'requests': requests}
                     ).execute()
-                    sheet_names.remove(self.SHEET_NAME)
+                    sheet_names.remove(self.sheet_name)
             
             # Create sheet if it doesn't exist
-            if self.SHEET_NAME not in sheet_names:
-                logger.info(f"Creating sheet: {self.SHEET_NAME}")
+            if self.sheet_name not in sheet_names:
+                logger.info(f"Creating sheet: {self.sheet_name}")
                 requests = [{
                     'addSheet': {
                         'properties': {
-                            'title': self.SHEET_NAME,
+                            'title': self.sheet_name,
                             'gridProperties': {
                                 'frozenRowCount': 1  # Freeze header row
                             }
                         }
                     }
                 }]
-                self.sheet.batchUpdate(
-                    spreadsheetId=self.SPREADSHEET_ID,
+                self.service.spreadsheets().batchUpdate(
+                    spreadsheetId=self.spreadsheet_id,
                     body={'requests': requests}
                 ).execute()
                 
@@ -91,59 +86,23 @@ class SheetsHelper:
                     questions = json.load(f)['quiz']
                     
                 headers = []
-                for i, q in enumerate(questions):
-                    headers.append(f"Q{i+1}: {q['question']}")
+                for q in questions:
+                    headers.append(q['question'])
                 headers.append("Timestamp")
                 
                 # Update headers
-                range_name = f'{self.SHEET_NAME}!A1'
+                range_name = f'{self.sheet_name}!A1'
                 body = {
                     'values': [headers]
                 }
-                self.sheet.values().update(
-                    spreadsheetId=self.SPREADSHEET_ID,
+                self.service.spreadsheets().values().update(
+                    spreadsheetId=self.spreadsheet_id,
                     range=range_name,
                     valueInputOption='RAW',
                     body=body
                 ).execute()
                 
-                # Format headers
-                sheet_id = None
-                spreadsheet = self.sheet.get(spreadsheetId=self.SPREADSHEET_ID).execute()
-                for sheet in spreadsheet['sheets']:
-                    if sheet['properties']['title'] == self.SHEET_NAME:
-                        sheet_id = sheet['properties']['sheetId']
-                        break
-                        
-                if sheet_id:
-                    requests = [{
-                        'repeatCell': {
-                            'range': {
-                                'sheetId': sheet_id,
-                                'startRowIndex': 0,
-                                'endRowIndex': 1
-                            },
-                            'cell': {
-                                'userEnteredFormat': {
-                                    'backgroundColor': {
-                                        'red': 0.8,
-                                        'green': 0.8,
-                                        'blue': 0.8
-                                    },
-                                    'textFormat': {
-                                        'bold': True
-                                    }
-                                }
-                            },
-                            'fields': 'userEnteredFormat(backgroundColor,textFormat)'
-                        }
-                    }]
-                    self.sheet.batchUpdate(
-                        spreadsheetId=self.SPREADSHEET_ID,
-                        body={'requests': requests}
-                    ).execute()
-                    
-                logger.info("Headers added and formatted successfully")
+                logger.info("Headers added successfully")
                 
             return True
                 
@@ -155,22 +114,24 @@ class SheetsHelper:
         """Test the sheet setup and return status."""
         try:
             # 1. Check spreadsheet access
-            spreadsheet = self.sheet.get(spreadsheetId=self.SPREADSHEET_ID).execute()
+            spreadsheet = self.service.spreadsheets().get(
+                spreadsheetId=self.spreadsheet_id
+            ).execute()
             logger.info(f"✓ Successfully accessed spreadsheet: {spreadsheet['properties']['title']}")
             
-            # 2. Check Responses sheet
+            # 2. Check Form Responses sheet
             sheets = spreadsheet.get('sheets', [])
             sheet_names = [s['properties']['title'] for s in sheets]
             
-            if self.SHEET_NAME not in sheet_names:
-                logger.error(f"✗ '{self.SHEET_NAME}' sheet not found")
+            if self.sheet_name not in sheet_names:
+                logger.error(f"✗ '{self.sheet_name}' sheet not found")
                 return False
-            logger.info(f"✓ Found '{self.SHEET_NAME}' sheet")
+            logger.info(f"✓ Found '{self.sheet_name}' sheet")
             
             # 3. Check headers
-            result = self.sheet.values().get(
-                spreadsheetId=self.SPREADSHEET_ID,
-                range=f"{self.SHEET_NAME}!A1:Z1"
+            result = self.service.spreadsheets().values().get(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!A1:Z1"
             ).execute()
             
             if not result.get('values'):
@@ -194,32 +155,22 @@ class SheetsHelper:
         except Exception as e:
             logger.error(f"Error testing setup: {str(e)}")
             return False
-        
-    def append_row(self, row_data):
-        """Append a row of data to the spreadsheet."""
+
+    def append_row(self, values):
+        """Append a row to the Google Sheet."""
         try:
-            logger.info(f"Appending row to sheet {self.SHEET_NAME}")
-            logger.debug(f"Row data: {row_data}")
-            
-            range_name = f'{self.SHEET_NAME}!A:Z'
             body = {
-                'values': [row_data]
+                'values': [values]
             }
-            
-            logger.debug(f"Making API call to append row...")
-            result = self.sheet.values().append(
-                spreadsheetId=self.SPREADSHEET_ID,
-                range=range_name,
+            result = self.service.spreadsheets().values().append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f'{self.sheet_name}!A1',  # This will append to the first empty row
                 valueInputOption='RAW',
                 insertDataOption='INSERT_ROWS',
                 body=body
             ).execute()
-            
-            logger.info(f"Successfully appended row. API response: {result}")
-            return True
-            
+            logger.info(f"Appended row to Google Sheet: {result}")
+            return result
         except Exception as e:
-            logger.error(f"Error appending row: {str(e)}")
-            logger.error(f"Spreadsheet ID: {self.SPREADSHEET_ID}")
-            logger.error(f"Sheet name: {self.SHEET_NAME}")
-            return False
+            logger.error(f"Error appending to Google Sheet: {str(e)}")
+            raise
