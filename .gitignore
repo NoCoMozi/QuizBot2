@@ -34,3 +34,17 @@ service_account.json
 
 # Logs
 *.log
+
+# Backups
+*.bak
+downloaded_backups/
+local_backups/
+
+# Executables
+*.exe
+
+# History files (optional, remove if you want to track history)
+# .history/
+
+# Fresh copy
+fresh_copy/
